@@ -54,6 +54,7 @@ help() ->
     format("hcb(Mod)    -- help about a module's callbacks\n"),
     format("hcb(Mod,CB) -- help about callback in module\n"),
     format("hcb(Mod,CB,Arity) -- help about callback with arity in module\n"),
+    format("hh(N)       -- help about functions in previous expression\n"),
     format("history(N) -- set how many previous commands to keep\n"),
     format("results(N) -- set how many previous command results to keep\n"),
     format("catch_exception(B) -- how exceptions are handled\n"),

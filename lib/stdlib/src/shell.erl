@@ -423,6 +423,13 @@ expand_expr({call,CA,{atom,VA,v},[N]}, C) ->
 	{Ces,_V,CommandN} when is_list(Ces) ->
             {call,CA,{atom,VA,v},[{integer,VA,CommandN}]}
     end;
+expand_expr({call,CA,{atom,VA,hh},[N]}, C) ->
+    case get_cmd(N, C) of
+        {_,undefined,_} ->
+	    no_command(N);
+	{Ces,_V,CommandN} when is_list(Ces) ->
+            {call,CA,{atom,VA,hh},[{integer,VA,CommandN}]}
+    end;
 expand_expr({call,A,F,Args}, C) ->
     {call,A,expand_expr(F, C),expand_exprs(Args, C)};
 expand_expr({'catch',A,E}, C) ->
@@ -870,6 +877,8 @@ not_restricted(f, [_]) ->
     true;
 not_restricted(h, []) ->
     true;
+not_restricted(hh, []) ->
+    true;
 not_restricted(b, []) ->
     true;
 not_restricted(history, [_]) ->
@@ -960,6 +969,91 @@ init_dict([]) -> true.
 %% handled internally - it should return 'true' for all local functions 
 %% handled in this module (i.e. those that are not eventually handled by 
 %% non_builtin_local_func/3 (user_default/shell_default).
+
+af_walker([]) -> ok;
+af_walker([{match, _Anno0, Left, Right}|T]) ->
+    af_walker([Left]),
+    af_walker([Right]),
+    af_walker(T);
+af_walker([{named_fun, _Anno0, _Fun, Clauses}|T]) ->
+    af_walker(Clauses),
+    af_walker(T);
+af_walker([{'fun', _Anno0, {clauses, Clauses}}|T]) ->
+    af_walker(Clauses),
+    af_walker(T);
+af_walker([{clause, _Anno0, _Params, _Dunno, Body}|T]) ->
+    af_walker(Body),
+    af_walker(T);
+
+af_walker([{record, _Anno0, _Rec,
+            Elements}|T]) ->
+    af_walker(Elements),
+    af_walker(T);
+af_walker([{record_field, _Anno0,
+            Key, Value}|T]) ->
+    af_walker([Key]),
+    af_walker([Value]),
+    af_walker(T);
+af_walker([{bin, _Anno0, 
+            Elements}|T]) ->
+    af_walker(Elements),
+    af_walker(T);
+af_walker([{bin_element, _Anno0, Value, Length, Type}|T]) ->
+    af_walker([Value]),
+    af_walker([Length]),
+    af_walker([Type]),
+    af_walker(T);
+af_walker([{map, _Anno0, 
+            Elements}|T]) ->
+    af_walker(Elements),
+    af_walker(T);
+af_walker([{map_field_assoc, _Anno0, 
+            K, V}|T]) ->
+    af_walker([K, V]),
+    af_walker(T);
+af_walker([{cons, _Anno0, 
+            Op1, Op2}|T]) ->
+    af_walker([Op1, Op2]),
+    af_walker(T);
+af_walker([{op, _Anno0, _Op, 
+            Op1, Op2}|T]) ->
+    af_walker([Op1, Op2]),
+    af_walker(T);
+af_walker([{tuple, _Anno0, 
+            Elements}|T]) ->
+    af_walker(Elements),
+    af_walker(T);
+af_walker([{call, _Anno0, 
+            {remote, _Anno1, 
+             {atom, _Anno2, Mod}, 
+             {atom, _Anno3, Fun}}, 
+            Params}|T]) ->
+    c:h(Mod, Fun),
+    af_walker(Params),
+    af_walker(T);
+af_walker([{call, _Anno0, 
+            {var, _Anno1, Fun}, 
+            Params}|T]) ->
+    c:h(erlang, Fun),
+    af_walker(Params),
+    af_walker(T);
+af_walker([{call, _Anno0, 
+            {atom, _Anno1, Fun}, 
+            Params}|T]) ->
+    c:h(erlang, Fun),
+    af_walker(Params),
+    af_walker(T);
+af_walker([_Wot|T]) ->
+    af_walker(T);
+af_walker(_Wot2) ->
+    ok.
+
+
+local_func(hh, [{integer,_,V}], Bs, Shell, _RT, _Lf, _Ef) ->
+    %% This command is validated and expanded prior.
+    {Ces,_Value,_N} = shell_req(Shell, {get_cmd, V}),
+    af_walker(Ces),
+    {value,ok,Bs};
 
 local_func(v, [{integer,_,V}], Bs, Shell, _RT, _Lf, _Ef) ->
     %% This command is validated and expanded prior.

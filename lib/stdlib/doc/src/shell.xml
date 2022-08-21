@@ -193,6 +193,12 @@
         <p>Print the documentation for <c>Module:Callback</c> in the shell
           if available.</p>
       </item>
+      <tag><c>hh(N)</c></tag>
+      <item>
+        <p>Print the documentation for all functions in the previous shell
+        expression N if available. N has the same meaning as in v(N)
+        or e(N)</p>
+      </item>
       <tag><c>c(Mod)</c></tag>
       <item>
         <p>Evaluates <c>shell_default:c(Mod)</c>. This compiles and
@@ -658,10 +664,48 @@ true</pre>
       in the running system.</p>
 
     <pre>
-51> <input>halt().</input>
+51> <input>[2 + hd([1,2,3]), element(2,{a,b,c}), inet:gethostname()].</input>
+[3,b,{ok,"zed"}]
+52> <input>hh(-1).</input>                                                   
+
+  -spec hd(List) -> term() when List :: [term(), ...].
+
+  Returns the head of List, that is, the first element, for example:
+
+    > hd([1,2,3,4,5]).
+    1
+
+  Allowed in guard tests.
+
+  Failure: badarg if List is the empty list [].
+
+  -spec element(N, Tuple) -> term()
+                   when N :: pos_integer(), Tuple :: tuple().
+
+  Returns the Nth element (numbering from 1) of Tuple, for example:
+
+    > element(2, {a, b, c}).
+    b
+
+  Allowed in guard tests.
+
+  -spec gethostname() -> {ok, Hostname} when Hostname :: string().
+
+  Returns the local hostname. Never fails.
+
+  gethostname/1
+
+  The documentation for gethostname/1 is hidden. This probably means that it
+  is internal and not to be used by other applications.
+</pre>
+
+    <p>Command 52 prints help messages for the functions in expression 51.</p>
+
+    <pre>
+53> <input>halt().</input>
 strider 2></pre>
 
-    <p>Command 51 exits the Erlang runtime system.</p>
+    <p>Command 53 exits the Erlang runtime system.</p>
   </section>
 
   <section>
